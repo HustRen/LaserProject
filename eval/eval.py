@@ -9,10 +9,10 @@ import matplotlib.pyplot as plt
 sys.path.insert(0, 'D:/工作/研究生/激光干扰/LaserInterEval')
 from LaserInterSim import traversalDir_FirstDir, mkdir, file_name
 from evalAlgorithm import AlgorContext, AlgorSuper, AlgorIQA, AlgorFeature
-from feature import FeatureSuper, FeatureHog
+from feature import FeatureSuper, FeatureHog, FeatureRaw
 
 def main():
-    files = file_name('D:/LaserData/ans/level4','.png', True)
+    files = file_name('D:/LaserData/ans/level7','.png', True)
     plt.figure(1)
     plt.title("Evaluation Result")
     plt.xlabel('Radius(pixel)')
@@ -34,14 +34,14 @@ def getEvalData(fileList, angle):
     """
     listX = []
     listY = []
-    context = AlgorContext(AlgorIQA('WFSIM'))
-    #context = AlgorContext(AlgorFeature(FeatureHog()))
+    context = AlgorContext(AlgorIQA())
+    #context = AlgorContext(AlgorFeature(FeatureRaw()))
     plane = cv2.imread('D:/LaserData/plane/plane1.png', cv2.IMREAD_GRAYSCALE)
     for file in fileList:
         (filepath,tempfilename) = os.path.split(file) #文件路径、文件名+后缀名
         (shotname,extension) = os.path.splitext(tempfilename)#文件名、后缀名
         splitStr = shotname.split('_')
-        if(angle == int(splitStr[1])):
+        if(len(splitStr) == 3 and angle == int(splitStr[1])):
             patch = getPlanePatch(file)
             listX.append(int(splitStr[2])) #半径
             listY.append(context.eval(plane, patch))

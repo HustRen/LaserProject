@@ -23,3 +23,10 @@ class FeatureHog(FeatureSuper):
     def vector(self, image):
         ans = hog(image)
         return ans
+
+class FeatureRaw(FeatureSuper):
+    def __init__(self):
+        super().__init__()
+
+    def vector(self, image):
+        return image.flatten()
