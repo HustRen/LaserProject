@@ -6,8 +6,8 @@ import math
 import cv2
 import numpy as np
 sys.path.insert(0, 'D:/工作/研究生/激光干扰/LaserInterEval')
-from WMSSIM import SSIM, WMS_SSIM 
-from WFSIM  import WFSIM
+from WMSSIM import SSIM, WMS_SSIM
+from WFSIM  import WFSIM, MFSIM
 from feature import FeatureSuper, FeatureHog
 class AlgorContext():
     def __init__(self, algor):
@@ -37,6 +37,8 @@ class AlgorIQA(AlgorSuper):
             ans = WFSIM(template, patch)
         elif self.__type == 'WMS_SSIM': #基于小波加权的SSIM评估算法
             ans = WMS_SSIM(template, patch)
+        elif self.__type == 'MFSIM': #基于小波加权的SSIM评估算法
+            ans = MFSIM(template, patch)
         else:
             ans = SSIM(template, patch)
         return ans

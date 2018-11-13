@@ -5,6 +5,7 @@ import math
 import cv2
 import numpy as np
 from PIL import Image
+from skimage.feature import hog
 import matplotlib.pyplot as plt
 sys.path.insert(0, 'D:/工作/研究生/激光干扰/LaserInterEval')
 from LaserInterSim import traversalDir_FirstDir, mkdir, file_name
@@ -22,7 +23,27 @@ def main():
         plt.plot(data[0], data[1], label='angle'+str(angle))
     plt.legend(loc="upper left")
     plt.show()
-    
+
+def showFeature():
+    plane = cv2.imread('D:/LaserData/plane/plane1.png', cv2.IMREAD_GRAYSCALE)
+    files = file_name('D:/LaserData/ans/level7','.png', True)
+    plane_array, plane_hog_img = hog(plane, visualise=True) 
+    cv2.imshow('plane', plane_hog_img)
+    cv2.imwrite('D:/LaserData/plane/plane_hog.png', plane_hog_img)
+    for file in files:
+        patch = getPlanePatch(file)
+        (filepath,tempfilename) = os.path.split(file) #文件路径、文件名+后缀名
+        (shotname,extension) = os.path.splitext(tempfilename)#文件名、后缀名
+        splitStr = shotname.split('_')
+        if(len(splitStr) == 3 and 0 == int(splitStr[1])):
+            patch = getPlanePatch(file)
+            patch_array, patch_hog_img = hog(patch, visualise=True)
+            cv2.imwrite(filepath + '/patch/' + shotname + '_patch' + '.png', patch)
+            cv2.imwrite(filepath + '/patch/' + shotname + '_hog' + '.png', patch_hog_img)
+            cv2.imshow('patch',patch_hog_img)
+            print(shotname)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
 
 def getEvalData(fileList, angle):
     """获取每一组干扰仿真图像的评估结果
@@ -34,8 +55,8 @@ def getEvalData(fileList, angle):
     """
     listX = []
     listY = []
-    context = AlgorContext(AlgorIQA())
-    #context = AlgorContext(AlgorFeature(FeatureRaw()))
+    context = AlgorContext(AlgorIQA('MFSIM'))
+    #context = AlgorContext(AlgorFeature(FeatureHog()))
     plane = cv2.imread('D:/LaserData/plane/plane1.png', cv2.IMREAD_GRAYSCALE)
     for file in fileList:
         (filepath,tempfilename) = os.path.split(file) #文件路径、文件名+后缀名
@@ -82,3 +103,4 @@ def getPlanePatch(filename):
 
 if __name__ == '__main__':
     main()
+    #showFeature()
