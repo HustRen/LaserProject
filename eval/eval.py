@@ -11,6 +11,7 @@ sys.path.insert(0, 'D:/工作/研究生/激光干扰/LaserInterEval')
 from LaserInterSim import traversalDir_FirstDir, mkdir, file_name
 from evalAlgorithm import AlgorContext, AlgorSuper, AlgorIQA, AlgorFeature
 from feature import FeatureSuper, FeatureHog, FeatureRaw
+from CNNFeature import AlgorVGG16
 
 def main():
     files = file_name('D:/LaserData/ans/level7','.png', True)
@@ -55,10 +56,12 @@ def getEvalData(fileList, angle):
     """
     listX = []
     listY = []
-    context = AlgorContext(AlgorIQA('MFSIM'))
+    #context = AlgorContext(AlgorIQA('MFSIM'))
     #context = AlgorContext(AlgorFeature(FeatureHog()))
+    context = AlgorContext(AlgorVGG16())
     plane = cv2.imread('D:/LaserData/plane/plane1.png', cv2.IMREAD_GRAYSCALE)
     for file in fileList:
+        print(file)
         (filepath,tempfilename) = os.path.split(file) #文件路径、文件名+后缀名
         (shotname,extension) = os.path.splitext(tempfilename)#文件名、后缀名
         splitStr = shotname.split('_')

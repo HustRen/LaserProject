@@ -9,6 +9,7 @@ sys.path.insert(0, 'D:/工作/研究生/激光干扰/LaserInterEval')
 from WMSSIM import SSIM, WMS_SSIM
 from WFSIM  import WFSIM, MFSIM
 from feature import FeatureSuper, FeatureHog
+
 class AlgorContext():
     def __init__(self, algor):
         self.__algor = algor
@@ -54,3 +55,6 @@ class AlgorFeature(AlgorSuper):
         v2 = self.__feature.vector(patch)
         dist = np.linalg.norm(v1 - v2)
         return dist
+
+
+
