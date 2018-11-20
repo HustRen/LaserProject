@@ -42,16 +42,7 @@ def addTarget(imgScr, laser, target, r, angle):
     imgCol = imgScr.shape[1]
     sptRow = target.shape[0]
     sptCol = target.shape[1]
-
-    imgCenRow = imgRow / 2
-    imgCenCol = imgCol / 2
-    sptCenRow = sptRow / 2
-    sptCenCol = sptCol / 2
-
-    laserD = cv2.resize(laser, (imgCol, imgRow), interpolation=cv2.INTER_CUBIC)
-    
-    startRow  = int(min(max(imgCenRow - r * math.sin((angle / 180) * math.pi) - sptCenRow, 0), imgRow - sptRow))
-    startCol  = int(min(max(imgCenCol + r * math.cos((angle / 180) * math.pi) - sptCenCol, 0), imgCol - sptCol))
+    startRow, startCol = GetSatrtXYFromPolar(imgScr.shape, target.shape, r, angle)
     imgAns = np.array(imgScr)
     '''for row in range(0, imgRow):
         for col in range(0, imgCol):
@@ -62,6 +53,20 @@ def addTarget(imgScr, laser, target, r, angle):
             gay = int(target[row][col]) + int(imgAns[startRow + row][startCol + col])
             imgAns[startRow + row][startCol + col] = min(gay, int(255))
     return imgAns
+
+def GetSatrtXYFromPolar(imageshape, targetshape, radius, angle):
+    imgRow = imageshape[0]
+    imgCol = imageshape[1]
+    targetRow = targetshape[0]
+    targetCol = targetshape[1]
+
+    imgCenRow = imgRow / 2
+    imgCenCol = imgCol / 2
+    targetCenRow = targetRow / 2
+    targetCenCol = targetCol / 2
+    startRow  = int(min(max(imgCenRow - radius * math.sin((angle / 180) * math.pi) - targetCenRow, 0), imgRow - targetRow))
+    startCol  = int(min(max(imgCenCol + radius * math.cos((angle / 180) * math.pi) - targetCenCol, 0), imgCol - targetCol))
+    return [startRow, startCol]
 
 def cutImage():
     scrPath = 'D:/LaserData//background/640X512/area0.png'

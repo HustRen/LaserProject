@@ -5,6 +5,7 @@ import math
 import cv2
 import numpy as np
 import abc
+from sim import GetSatrtXYFromPolar
 
 class SimAlgorSuper(metaclass = abc.ABCMeta):
     def __init__(self, im_size):
@@ -39,13 +40,14 @@ class Target(SimAlgorSuper):
         imgRow, imgCol= self._data.shape
         targetRow, targetCol = self.__target.shape
 
-        imgCenRow = imgRow / 2
+        startRow, startCol = GetSatrtXYFromPolar(self._data.shape, self.__target.shape, self.__r, self.__angle)
+        '''imgCenRow = imgRow / 2
         imgCenCol = imgCol / 2
         targetCenRow = targetRow / 2
         targetCenCol = targetCol / 2
 
         startRow  = int(min(max(imgCenRow - self.__r * math.sin((self.__angle / 180) * math.pi) - targetCenRow, 0), imgRow - targetRow))
-        startCol  = int(min(max(imgCenCol + self.__r * math.cos((self.__angle / 180) * math.pi) - targetCenCol, 0), imgCol - targetCol))
+        startCol  = int(min(max(imgCenCol + self.__r * math.cos((self.__angle / 180) * math.pi) - targetCenCol, 0), imgCol - targetCol))'''
 
         for row in range(0, targetRow):
             for col in range(0, targetCol):
@@ -89,7 +91,7 @@ def main():
     im = SimImage(scr.shape)
     im.add(Background(scr.shape, scr))
     #im.add(Noise(scr.shape, laser))
-    im.add(Target(scr.shape, target, 100, 180))
+    im.add(Target(scr.shape, target, 0, 180))
     image = im.image()
     cv2.imshow('test', image)
     cv2.waitKey(0)
