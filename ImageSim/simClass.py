@@ -91,7 +91,10 @@ def main():
     im = SimImage(scr.shape)
     im.add(Background(scr.shape, scr))
     #im.add(Noise(scr.shape, laser))
-    im.add(Target(scr.shape, target, 0, 180))
+    for angle in range(0, 360, 60):
+        for r in range(20, 120, 40):
+            im.add(Target(scr.shape, target, r, angle))
+
     image = im.image()
     cv2.imshow('test', image)
     cv2.waitKey(0)

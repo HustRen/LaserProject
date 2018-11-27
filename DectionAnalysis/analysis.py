@@ -17,7 +17,6 @@ TargetRow = 107
 class Record(object):
     def __init__(self, filename):
         tempfilename = os.path.basename(filename) 
-        #if re.match(r'level\d_(\d)+_(\d)+[.]txt', tempfilename):
         (shotname,extension) = os.path.splitext(tempfilename)#文件名、后缀名
         splitStr = shotname.split('_')
         self.laser = splitStr[0]
@@ -34,7 +33,7 @@ class Record(object):
                     obj['name'] = strs[0]
                     obj['pro'] = float(strs[1])
                     obj['bbox'] = [float(strs[3]), float(strs[2]), float(strs[5]), float(strs[4])] #(topleft_row, topleft_col, botright_row, botright_col)
-                    obj['iou'] = ComputeIoU(recTarget, obj['bbox'])
+                    obj['iou'] = self.ComputeIoU(recTarget, obj['bbox'])
                     if obj['iou'] > 0.5:
                         obj['flage'] = True
                     self.objects.append(obj)
@@ -59,60 +58,32 @@ class Record(object):
     @staticmethod
     def ComputeIoU(rec1, rec2):
         """
-    computing IoU
-    :param rec1: (y0, x0, y1, x1), which reflects
+        computing IoU
+        :param rec1: (y0, x0, y1, x1), which reflects
             (top, left, bottom, right)
-    :param rec2: (y0, x0, y1, x1)
-    :return: scala value of IoU
-     """
-    # computing area of each rectangles
+        :param rec2: (y0, x0, y1, x1)
+        :return: scala value of IoU
+        """
+        # computing area of each rectangles
         S_rec1 = (rec1[2] - rec1[0]) * (rec1[3] - rec1[1])
         S_rec2 = (rec2[2] - rec2[0]) * (rec2[3] - rec2[1])
  
-    # computing the sum_area
+        # computing the sum_area
         sum_area = S_rec1 + S_rec2
  
-    # find the each edge of intersect rectangle
+        # find the each edge of intersect rectangle
         left_line = max(rec1[1], rec2[1])
         right_line = min(rec1[3], rec2[3])
         top_line = max(rec1[0], rec2[0])
         bottom_line = min(rec1[2], rec2[2])
  
-    # judge if there is an intersect
+         # judge if there is an intersect
         if left_line >= right_line or top_line >= bottom_line:
             return 0
         else:
             intersect = (right_line - left_line) * (bottom_line - top_line)
             return intersect / (sum_area - intersect)
 
-
-def ComputeIoU(rec1, rec2):
-    """
-    computing IoU
-    :param rec1: (y0, x0, y1, x1), which reflects
-            (top, left, bottom, right)
-    :param rec2: (y0, x0, y1, x1)
-    :return: scala value of IoU
-    """
-    # computing area of each rectangles
-    S_rec1 = (rec1[2] - rec1[0]) * (rec1[3] - rec1[1])
-    S_rec2 = (rec2[2] - rec2[0]) * (rec2[3] - rec2[1])
- 
-    # computing the sum_area
-    sum_area = S_rec1 + S_rec2
- 
-    # find the each edge of intersect rectangle
-    left_line = max(rec1[1], rec2[1])
-    right_line = min(rec1[3], rec2[3])
-    top_line = max(rec1[0], rec2[0])
-    bottom_line = min(rec1[2], rec2[2])
- 
-    # judge if there is an intersect
-    if left_line >= right_line or top_line >= bottom_line:
-        return 0
-    else:
-        intersect = (right_line - left_line) * (bottom_line - top_line)
-        return intersect / (sum_area - intersect)
 
 class PRCurve(object):
     def __init__(self, filelist):
@@ -146,22 +117,53 @@ class PRCurve(object):
         return [P, R]
 
     def GetPRCurveData(self):
-        for i in range(0, 100, 5):
-            th = float(i) / 100.0
+        for i in range(0, 10000, 1):
+            th = float(i) / 10000.0
             p,r = self.GetPRbyThreshold(th)
             self.P.append(p)
             self.R.append(r)
 
     def DrawPRCrve(self):
+        plt.xlabel('Recall')
+        plt.ylabel('Precison')
+        plt.xlim(0.1, 1.03)
+        plt.ylim(0.0, 1.03)
         plt.plot(self.R, self.P)
         plt.show()
         #plt.waitforbuttonpress()
 
+def myFilesFilter(filelist, id):
+    files = []
+    template = 'level'+str(id)
+    for file in filelist:
+        basename = os.path.basename(file)
+        if basename.find(template) != -1:
+            files.append(file)
+    return files
+
+def drawPRCurve():
+    templatefiles = file_name('D:/LaserData/alldection/template', '.txt', True)
+    allfiles = file_name('D:/LaserData/alldection/sim', '.txt', True)
+    
+    plt.xlabel('Recall')
+    plt.ylabel('Precison')
+    plt.xlim(0.1, 1.03)
+    plt.ylim(0.0, 1.03)
+    #allCurve = PRCurve(allfiles)
+    #plt.plot(allCurve.R, allCurve.P, label='All interfered data')
+    templateCurve = PRCurve(templatefiles)
+    plt.plot(templateCurve.R, templateCurve.P, label='Undisturbed data')
+    for i in range(7, 8):
+        print('Draw level%d' % i)
+        levelFiles = myFilesFilter(allfiles, i)
+        levelCurve = PRCurve(levelFiles)
+        plt.plot(levelCurve.R, levelCurve.P, label='Level' + str(i) + ' interfered data')
+    plt.legend(loc="lower left")
+    plt.show()
 
 def mian():
-    filelist = file_name('D:/LaserData/alldection/sim', '.txt', True)
-    curve = PRCurve(filelist)
-    curve.DrawPRCrve()
+    drawPRCurve()
+    #curve.DrawPRCrve()
   
 
 if __name__ == "__main__":
