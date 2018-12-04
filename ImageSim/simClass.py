@@ -57,7 +57,6 @@ class LaserSpot(SimAlgorSuper):
                     self._data[row][col] = int(255 * index)
         return self._data
     
-
 class Target(SimAlgorSuper):
     def __init__(self, im_size, target, r, angle):
         super().__init__(im_size)
@@ -70,14 +69,6 @@ class Target(SimAlgorSuper):
         targetRow, targetCol = self.__target.shape
 
         startRow, startCol = GetSatrtXYFromPolar(self._data.shape, self.__target.shape, self.__r, self.__angle)
-        '''imgCenRow = imgRow / 2
-        imgCenCol = imgCol / 2
-        targetCenRow = targetRow / 2
-        targetCenCol = targetCol / 2
-
-        startRow  = int(min(max(imgCenRow - self.__r * math.sin((self.__angle / 180) * math.pi) - targetCenRow, 0), imgRow - targetRow))
-        startCol  = int(min(max(imgCenCol + self.__r * math.cos((self.__angle / 180) * math.pi) - targetCenCol, 0), imgCol - targetCol))'''
-
         for row in range(0, targetRow):
             for col in range(0, targetCol):
                 gay = int(self.__target[row][col])
