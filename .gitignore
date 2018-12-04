@@ -1,0 +1,14 @@
+.spyproject/codestyle.ini
+.spyproject/encoding.ini
+.spyproject/vcs.ini
+.spyproject/workspace.ini
+.vscode/settings.json
+CorrelationEval/__init__.py
+CorrelationEval/__pycache__/CNNFeature.cpython-35.pyc
+CorrelationEval/__pycache__/evalAlgorithm.cpython-35.pyc
+CorrelationEval/__pycache__/feature.cpython-35.pyc
+DectionAnalysis/__init__.py
+ImageSim/__init__.py
+ImageSim/__pycache__/sim.cpython-35.pyc
+__init__.py
+dections.txt
