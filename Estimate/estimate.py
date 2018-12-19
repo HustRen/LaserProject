@@ -39,7 +39,16 @@ class GridImage(object):
         
 class OcclusionEstimateImage(object):
     def __init__(self, occlussionMap, maskMap, searchKernelSize, attenuation = 80, truncation = 0.8):
-         #PARAMETERS
+        """评估光斑遮挡的数据 
+     Arguments：
+         occlussionMap {image} -- 有遮挡的图像数据（单通道，或者二维数组）
+         maskMap {[type]} -- 遮挡模板，有遮挡的地方为255，无遮挡的为0
+         searchKernelSize {[int]} -- patch的大小
+     Keyword Arguments:
+         attenuation {int} -- [description] (default: {80})
+         truncation {float} -- [description] (default: {0.8})
+        """   
+        #PARAMETERS
         self.PARM_attenuation = attenuation
         self.PARM_truncation = truncation
         #check whether searchKernelSize is odd:
@@ -48,16 +57,16 @@ class OcclusionEstimateImage(object):
         self.searchKernelSize = searchKernelSize
 
         self.canvas, self.filledMap = self.initCanvas(occlussionMap, maskMap)
-        self.examplePatches = self.prepareExamplePatches()
-
+        #self.examplePatches = self.prepareExamplePatches()
+        self.examplePatches = self.prepareExamplePatchesByGauss()
          #init a map of best candidates to be resolved (we want to reuse the information)
         self.bestCandidateMap = np.zeros(np.shape(self.filledMap))
+        #self.initCandidateMap()
         self.textureSynthesis()
         
     def textureSynthesis(self):
         resolved_pixels = 0
-        pixels_to_resolve = 10000
-        cv2.namedWindow('image')
+        pixels_to_resolve = np.sum(np.sum(1 - self.filledMap, axis=1), axis=0) + 1
         while resolved_pixels < pixels_to_resolve:
             self.updateCandidateMap(5)
              #get best candidate coordinates
@@ -90,13 +99,13 @@ class OcclusionEstimateImage(object):
             chosenPixel = np.copy(chosenPatch[0,halfKernel, halfKernel])
 
             #resolvePixel
-            self.canvas[candidate_row, candidate_col] = chosenPixel
-            self.filledMap[candidate_row, candidate_col] = 1
-            if resolved_pixels%99 == 0:
-                cv2.imwrite('D:/LaserData/plane/1/' + str(resolved_pixels) + '.png', np.uint8(self.canvas*255))
-                
-            resolved_pixels = resolved_pixels+1
-            print('t:%d, pos row:%d col:%d gay:%d' %(resolved_pixels, candidate_row, candidate_col, 255*chosenPixel))
+            if self.filledMap[candidate_row, candidate_col] == 0:
+                self.canvas[candidate_row, candidate_col] = chosenPixel
+                self.filledMap[candidate_row, candidate_col] = 1
+                resolved_pixels = resolved_pixels+1
+                if resolved_pixels%100 == 0 or resolved_pixels == pixels_to_resolve - 1:
+                    cv2.imwrite('D:/LaserData/plane/2/' + str(resolved_pixels) + '.png', np.uint8(self.canvas*255))    
+                print('t:%d, pos row:%d col:%d gay:%d' %(resolved_pixels, candidate_row, candidate_col, 255*chosenPixel))
 
     def distances2probability(self, distances, PARM_truncation, PARM_attenuation):
         probabilities = 1 - distances / np.max(distances)  
@@ -153,9 +162,41 @@ class OcclusionEstimateImage(object):
         #check if bestCandidateMap is empty
         if np.argmax(self.bestCandidateMap) == 0:
             #populate from sratch
+            integral = self.integral(self.filledMap)
+            ridx = int(kernelSize / 2)
             for r in range(np.shape(self.bestCandidateMap)[0]):
                 for c in range(np.shape(self.bestCandidateMap)[1]):
-                    self.bestCandidateMap[r, c] = np.sum(self.getNeighbourhood(self.filledMap, kernelSize, r, c))
+                    #self.bestCandidateMap[r, c] = np.sum(self.getNeighbourhood(self.filledMap, kernelSize, self.candidateStartRow + r, self.candidateStartCol + c))
+                    # self.bestCandidateMap[r, c] = np.sum(self.getNeighbourhood(self.filledMap, kernelSize, r, c))
+                     colL = max(c - ridx, 0)
+                     colR = min(c + ridx, np.shape(self.bestCandidateMap)[1] - 1)
+                     RowU = max(r - ridx, 0)
+                     RowD = min(r + ridx, np.shape(self.bestCandidateMap)[0] - 1)
+                     self.bestCandidateMap[r, c] = integral[RowD][colR] - integral[RowU][colR] - integral[RowD][colL]\
+                      + integral[RowU][colL]
+
+    def initCandidateMap(self):
+        rows, cols = np.shape(self.filledMap)
+        minRow = rows - 1
+        maxRow = 0
+        minCol = cols - 1
+        maxCol = 0
+        for row in range(rows):
+            for col in range(cols):
+                if self.filledMap[row][col] == 0:
+                    minRow = min(row, minRow)
+                    maxRow = max(row, maxRow)
+                    minCol = min(col, minCol)
+                    maxCol = max(col, maxCol)
+        minRow = max(0, minRow - self.searchKernelSize)
+        maxRow = min(rows, maxRow + self.searchKernelSize + 1)
+        minCol = max(0, minCol - self.searchKernelSize)
+        maxCol = min(cols, maxCol + self.searchKernelSize + 1)
+        self.bestCandidateMap = np.zeros((maxRow - minRow, maxCol - minCol))
+        self.candidateStartRow = minRow
+        self.candidateEndRow = maxRow
+        self.candidateStartCol = minCol
+        self.candidateEndCol = maxCol
 
     def initCanvas(self, occlussionMap, maskMap):
         #create canvas 
@@ -165,10 +206,32 @@ class OcclusionEstimateImage(object):
         filledMap = 1 - mask
         return canvas, filledMap
 
+    @staticmethod
+    def getMapCentre(im):
+        rows, cols = np.shape(im)
+        rowTotal = 0
+        rowCount = 0
+        colTotal = 0
+        colCount = 0
+        for row in range(rows):
+            for col in range(cols):
+                if im[row][col] != 0:
+                    rowTotal = rowTotal + row * im[row][col]
+                    rowCount = rowCount + 1
+                    colTotal = colTotal + col * im[row][col]
+                    colCount = colCount + 1
+        if rowCount == 0:
+            centerCol = 0
+            centerRow = 0
+        else:
+            centerRow = rowTotal / rowCount
+            centerCol = colTotal / colCount
+        return centerRow, centerCol
+
     def prepareExamplePatches(self):
         #get exampleMap dimensions
         imgRows, imgCols= np.shape(self.canvas)
-    
+       
         #find out possible steps for a search window to slide along the image
         num_horiz_patches = imgRows - (self.searchKernelSize-1);
         num_vert_patches = imgCols - (self.searchKernelSize-1);
@@ -186,6 +249,30 @@ class OcclusionEstimateImage(object):
         examplePatches = np.array(Patches)     
         return examplePatches
 
+    def prepareExamplePatchesByGauss(self):
+        #get exampleMap dimensions
+        imgRows, imgCols= np.shape(self.canvas)
+        centerRow, centerCol = self.getMapCentre(1 - self.filledMap)
+        mean = [0, 0]
+        cov = [[1, 0], [0, 1]]
+        num = 20000
+        colf, rowf = np.random.multivariate_normal(mean, cov, num).T
+         #init candidates array
+        Patches = []#np.zeros((num_horiz_patches*num_vert_patches, searchKernelSize, searchKernelSize, imgChs))
+        for i in range(num):
+            rf = rowf[i]
+            cf = colf[i]
+            if rf < imgRows  - self.searchKernelSize and rf >= 0 \
+            and cf < imgCols  - self.searchKernelSize and cf >= 0:
+                r = min(max(int(rf * imgRows + centerRow), 0), imgRows - self.searchKernelSize)
+                c = min(max(int(cf * imgCols + centerCol), 0), imgCols - self.searchKernelSize)
+                patch = self.canvas[r:r+self.searchKernelSize, c:c+self.searchKernelSize]
+                mask = self.filledMap[r:r+self.searchKernelSize, c:c+self.searchKernelSize]
+                if mask.min() == 1:
+                    Patches.append(patch)   
+        examplePatches = np.array(Patches)     
+        return examplePatches
+                
     @staticmethod
     def gkern(kern_x, kern_y, nsig=3):
         """Returns a 2D Gaussian kernel array."""
@@ -204,10 +291,29 @@ class OcclusionEstimateImage(object):
     
         return kernel
 
+    @staticmethod
+    def integral(img):
+        integ_graph = np.zeros((img.shape[0],img.shape[1]),dtype = np.int32)
+        for x in range(img.shape[0]):
+            sum_clo = 0
+            for y in range(img.shape[1]):
+                sum_clo = sum_clo + img[x][y]
+                integ_graph[x][y] = integ_graph[x-1][y] + sum_clo;
+        return integ_graph
+   
 def main():
     occluImage = cv2.imread('D:/LaserData/plane/occlusion.png', cv2.IMREAD_GRAYSCALE)
     mask = cv2.imread('D:/LaserData/plane/mask.png', cv2.IMREAD_GRAYSCALE)
     test = OcclusionEstimateImage(occluImage, mask, 15, attenuation = 80, truncation = 0.8)
+    '''mean = [0, 0]
+    cov = [[1, 0], [0, 1]]
+
+    x, y = np.random.multivariate_normal(mean, cov, 1000).T
+    plt.plot(x*500 + 1000, y*500 + 1000, 'x')
+    plt.axis('equal')
+    plt.show()
+    plt.waitforbuttonpress()'''
+
 
 if __name__ == "__main__":
     '''scrImg = cv2.imread('D:/LaserData/plane/P1502__1__924___0.png', cv2.IMREAD_GRAYSCALE)
