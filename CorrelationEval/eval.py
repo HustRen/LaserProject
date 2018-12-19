@@ -104,5 +104,8 @@ def getPlanePatch(filename):
     return patch
 
 if __name__ == '__main__':
-    main()
+    #main()
     #showFeature()
+    
+
+    
