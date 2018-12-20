@@ -124,39 +124,6 @@ class OcclusionEstimateImage(object):
         candidate_row, candidate_col = divmod(np.argmax(self.bestCandidateMap), self.canvas.shape[1])
         return candidate_row, candidate_col
 
-    @staticmethod
-    def covertRGB(image):
-        exampleMap = image / 255.0 #normalize
-        #make sure it is 3channel RGB
-        #if (np.shape(exampleMap)[-1] > 3): 
-        #    exampleMap = exampleMap[:,:,:3] #remove Alpha Channel
-        #if (len(np.shape(exampleMap)) == 2):
-        #    exampleMap = np.repeat(exampleMap[np.newaxis, :, :], 3, axis=0) #convert from Grayscale to RGB
-        return exampleMap
-
-    @staticmethod
-    def getNeighbourhood(mapToGetNeighbourhoodFrom, kernelSize, row, col):
-        halfKernel = floor(kernelSize / 2)
-    
-        if mapToGetNeighbourhoodFrom.ndim == 3:
-            npad = ((halfKernel, halfKernel), (halfKernel, halfKernel), (0, 0))
-        elif mapToGetNeighbourhoodFrom.ndim == 2:
-            npad = ((halfKernel, halfKernel), (halfKernel, halfKernel))
-        else:
-            print('ERROR: getNeighbourhood function received a map of invalid dimension!')
-        
-        paddedMap = np.lib.pad(mapToGetNeighbourhoodFrom, npad, 'constant', constant_values=0)
-    
-        shifted_row = row + halfKernel
-        shifted_col = col + halfKernel
-    
-        row_start = shifted_row - halfKernel
-        row_end = shifted_row + halfKernel + 1
-        col_start = shifted_col - halfKernel
-        col_end = shifted_col + halfKernel + 1
-    
-        return paddedMap[row_start:row_end, col_start:col_end]
-
     def updateCandidateMap(self, kernelSize):
         self.bestCandidateMap *= 1 - self.filledMap #remove all resolved from the map
         #check if bestCandidateMap is empty
@@ -206,28 +173,6 @@ class OcclusionEstimateImage(object):
         filledMap = 1 - mask
         return canvas, filledMap
 
-    @staticmethod
-    def getMapCentre(im):
-        rows, cols = np.shape(im)
-        rowTotal = 0
-        rowCount = 0
-        colTotal = 0
-        colCount = 0
-        for row in range(rows):
-            for col in range(cols):
-                if im[row][col] != 0:
-                    rowTotal = rowTotal + row * im[row][col]
-                    rowCount = rowCount + 1
-                    colTotal = colTotal + col * im[row][col]
-                    colCount = colCount + 1
-        if rowCount == 0:
-            centerCol = 0
-            centerRow = 0
-        else:
-            centerRow = rowTotal / rowCount
-            centerCol = colTotal / colCount
-        return centerRow, centerCol
-
     def prepareExamplePatches(self):
         #get exampleMap dimensions
         imgRows, imgCols= np.shape(self.canvas)
@@ -272,7 +217,29 @@ class OcclusionEstimateImage(object):
                     Patches.append(patch)   
         examplePatches = np.array(Patches)     
         return examplePatches
-                
+                             
+    @staticmethod
+    def getMapCentre(im):
+        rows, cols = np.shape(im)
+        rowTotal = 0
+        rowCount = 0
+        colTotal = 0
+        colCount = 0
+        for row in range(rows):
+            for col in range(cols):
+                if im[row][col] != 0:
+                    rowTotal = rowTotal + row * im[row][col]
+                    rowCount = rowCount + 1
+                    colTotal = colTotal + col * im[row][col]
+                    colCount = colCount + 1
+        if rowCount == 0:
+            centerCol = 0
+            centerRow = 0
+        else:
+            centerRow = rowTotal / rowCount
+            centerCol = colTotal / colCount
+        return centerRow, centerCol
+
     @staticmethod
     def gkern(kern_x, kern_y, nsig=3):
         """Returns a 2D Gaussian kernel array."""
@@ -301,6 +268,39 @@ class OcclusionEstimateImage(object):
                 integ_graph[x][y] = integ_graph[x-1][y] + sum_clo;
         return integ_graph
    
+    @staticmethod
+    def covertRGB(image):
+        exampleMap = image / 255.0 #normalize
+        #make sure it is 3channel RGB
+        #if (np.shape(exampleMap)[-1] > 3): 
+        #    exampleMap = exampleMap[:,:,:3] #remove Alpha Channel
+        #if (len(np.shape(exampleMap)) == 2):
+        #    exampleMap = np.repeat(exampleMap[np.newaxis, :, :], 3, axis=0) #convert from Grayscale to RGB
+        return exampleMap
+
+    @staticmethod
+    def getNeighbourhood(mapToGetNeighbourhoodFrom, kernelSize, row, col):
+        halfKernel = floor(kernelSize / 2)
+    
+        if mapToGetNeighbourhoodFrom.ndim == 3:
+            npad = ((halfKernel, halfKernel), (halfKernel, halfKernel), (0, 0))
+        elif mapToGetNeighbourhoodFrom.ndim == 2:
+            npad = ((halfKernel, halfKernel), (halfKernel, halfKernel))
+        else:
+            print('ERROR: getNeighbourhood function received a map of invalid dimension!')
+        
+        paddedMap = np.lib.pad(mapToGetNeighbourhoodFrom, npad, 'constant', constant_values=0)
+    
+        shifted_row = row + halfKernel
+        shifted_col = col + halfKernel
+    
+        row_start = shifted_row - halfKernel
+        row_end = shifted_row + halfKernel + 1
+        col_start = shifted_col - halfKernel
+        col_end = shifted_col + halfKernel + 1
+    
+        return paddedMap[row_start:row_end, col_start:col_end]
+
 def main():
     occluImage = cv2.imread('D:/LaserData/plane/occlusion.png', cv2.IMREAD_GRAYSCALE)
     mask = cv2.imread('D:/LaserData/plane/mask.png', cv2.IMREAD_GRAYSCALE)
