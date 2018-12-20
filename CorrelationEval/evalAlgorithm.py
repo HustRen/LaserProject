@@ -1,26 +1,27 @@
 # coding:utf-8
 import abc
-import tensorflow as tf
+import math
 import os
 import sys
-import math
+
 import cv2
-import numpy as np
-sys.path.insert(0, 'D:/工作/研究生/激光干扰/LaserInterEval')
-sys.path.insert(0, 'D:/ProgramData/project/tensorflow-vgg-master/tensorflow-vgg-master')
-import vgg16
-import utils
-from WMSSIM import SSIM, WMS_SSIM
-from WFSIM  import WFSIM, MFSIM
 import matplotlib.pyplot as plt
+import numpy as np
+import skimage
+import skimage.io
+import skimage.transform
+import tensorflow as tf
 from matplotlib.colors import BoundaryNorm
 from matplotlib.ticker import MaxNLocator
 from PIL import Image
 from skimage.feature import hog
-import skimage
-import skimage.io
-import skimage.transform
 
+sys.path.insert(0, 'D:/工作/研究生/激光干扰/LaserInterEval')
+sys.path.insert(0, 'D:/ProgramData/project/tensorflow-vgg-master/tensorflow-vgg-master')
+import utils
+import vgg16
+from WFSIM import MFSIM, WFSIM
+from WMSSIM import SSIM, WMS_SSIM
 
 class AlgorContext():
     def __init__(self, algor):

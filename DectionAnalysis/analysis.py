@@ -2,14 +2,16 @@
 import os
 import re
 import sys
-import numpy as np
-import cv2 
-sys.path.append(os.path.dirname(__file__) + os.sep + '../ImageSim')
-from sim import GetSatrtXYFromPolar
-import matplotlib.pyplot as plt
-sys.path.insert(0, 'D:/工作/研究生/激光干扰/LaserInterEval')
-from LaserInterSim import traversalDir_FirstDir, mkdir, file_name
 from collections import Counter
+
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
+
+sys.path.append(os.path.dirname(__file__) + os.sep + '../ImageSim')
+sys.path.insert(0, 'D:/工作/研究生/激光干扰/LaserInterEval')
+from LaserInterSim import file_name, mkdir, traversalDir_FirstDir
+from sim import GetSatrtXYFromPolar
 
 ImageCol = 320
 ImageRow = 256

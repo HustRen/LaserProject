@@ -1,15 +1,17 @@
 # coding:utf-8
+import abc
+import math
 import os
 import sys
-import math
-import cv2
-import numpy as np
-import abc
-import matplotlib.pyplot as plt
-from random import randint, gauss
 from math import floor
-from skimage import io, feature, transform 
-import scipy.stats as st #for gaussian kernel
+from random import gauss, randint
+
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
+import scipy.stats as st  # for gaussian kernel
+from skimage import feature, io, transform
+
 
 class GridImage(object):
     def __init__(self, img, grid, dtype):
@@ -301,6 +303,7 @@ class OcclusionEstimateImage(object):
     
         return paddedMap[row_start:row_end, col_start:col_end]
 
+
 def main():
     occluImage = cv2.imread('D:/LaserData/plane/occlusion.png', cv2.IMREAD_GRAYSCALE)
     mask = cv2.imread('D:/LaserData/plane/mask.png', cv2.IMREAD_GRAYSCALE)
@@ -320,4 +323,3 @@ if __name__ == "__main__":
     grid = GridImage(scrImg, 10, 'var')
     grid.girdShow()'''
     main()
-
