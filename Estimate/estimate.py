@@ -2,6 +2,7 @@
 import abc
 import math
 import os
+import shutil
 import sys
 from math import floor
 from random import gauss, randint
@@ -14,28 +15,30 @@ from skimage import feature, io, transform
 
 
 class GridImage(object):
-    def __init__(self, img, grid, dtype):
+    def __init__(self, img, grid):
         rows, cols = img.shape
         rows = int(rows / grid)
         cols = int(cols / grid)
-        self.gridImage = np.zeros((rows, cols))
+        self.meanImage = np.zeros((rows, cols))
+        self.varImage = np.zeros((rows, cols))
         self.scrImage = img
-        self.computGrid(grid, dtype)
+        self.computGrid(grid)
     
-    def computGrid(self, grid, dtype):
+    def computGrid(self, grid):
        for row in range(0, self.gridImage.shape[0]):
            for col in range(0, self.gridImage.shape[1]):
-               startRow = grid * row
-               endRow   = grid * (row + 1) if row < self.gridImage.shape[0] - 1 else self.scrImage.shape[0]
-               startCol = grid * (col - 1)
-               endCol   = grid *(col + 1) if col < self.gridImage.shape[1] - 1 else self.scrImage.shape[1]
-               if dtype == 'mean':
-                   self.gridImage[row][col] = np.mean(self.scrImage[startRow:endRow, startCol:endCol])
-               else:
-                   self.gridImage[row][col] = np.var(self.scrImage[startRow:endRow, startCol:endCol])
+                startRow = grid * row
+                endRow   = grid * (row + 1) if row < self.gridImage.shape[0] - 1 else self.scrImage.shape[0]
+                startCol = grid * (col - 1)
+                endCol   = grid *(col + 1) if col < self.gridImage.shape[1] - 1 else self.scrImage.shape[1]
+                self.meanImage[row][col] = np.mean(self.scrImage[startRow:endRow, startCol:endCol])
+                self.varImage[row][col] = np.var(self.scrImage[startRow:endRow, startCol:endCol])
 
-    def girdShow(self):
-        plt.imshow(self.gridImage)
+    def girdShow(self, dtype):
+        if dtype == 'mean':
+            plt.imshow(self.meanImage)
+        else:
+            plt.imshow(self.varImage)
         plt.show()
         plt.waitforbuttonpress()
         
@@ -64,11 +67,12 @@ class OcclusionEstimateImage(object):
          #init a map of best candidates to be resolved (we want to reuse the information)
         self.bestCandidateMap = np.zeros(np.shape(self.filledMap))
         #self.initCandidateMap()
-        self.textureSynthesis()
+        self.__DEBUG = False
+        self.__DEBUGPATH = 'null'
         
     def textureSynthesis(self):
         resolved_pixels = 0
-        pixels_to_resolve = np.sum(np.sum(1 - self.filledMap, axis=1), axis=0) + 1
+        pixels_to_resolve = np.sum(np.sum(1 - self.filledMap, axis=1), axis=0)
         while resolved_pixels < pixels_to_resolve:
             self.updateCandidateMap(5)
              #get best candidate coordinates
@@ -105,9 +109,20 @@ class OcclusionEstimateImage(object):
                 self.canvas[candidate_row, candidate_col] = chosenPixel
                 self.filledMap[candidate_row, candidate_col] = 1
                 resolved_pixels = resolved_pixels+1
-                if resolved_pixels%100 == 0 or resolved_pixels == pixels_to_resolve - 1:
-                    cv2.imwrite('D:/LaserData/plane/2/' + str(resolved_pixels) + '.png', np.uint8(self.canvas*255))    
-                print('t:%d, pos row:%d col:%d gay:%d' %(resolved_pixels, candidate_row, candidate_col, 255*chosenPixel))
+                if self.__DEBUG == True:
+                    if resolved_pixels%100 == 0 or resolved_pixels == pixels_to_resolve:
+                        cv2.imwrite(self.__DEBUGPATH + str(resolved_pixels) + '.png', np.uint8(self.canvas*(self.max - self.min) + self.min))    
+                    print('t:%d / %d, pos row:%d col:%d gay:%d' %(resolved_pixels, pixels_to_resolve, candidate_row, candidate_col, 255*chosenPixel))
+        print('finished')
+        return self.canvas*(self.max - self.min) + self.min
+
+    def debugModel(self, path):
+        if os.path.exists(path):
+            del_file(path)
+        else:
+            os.makedirs(path)
+        self.__DEBUGPATH = path + '/'
+        self.__DEBUG = True
 
     def distances2probability(self, distances, PARM_truncation, PARM_attenuation):
         probabilities = 1 - distances / np.max(distances)  
@@ -169,8 +184,10 @@ class OcclusionEstimateImage(object):
 
     def initCanvas(self, occlussionMap, maskMap):
         #create canvas 
-        canvas = self.covertRGB(occlussionMap)
-        mask = maskMap / 255
+        self.max = occlussionMap.max
+        self.min = occlussionMap.min
+        canvas = self.Normal(occlussionMap, self.max, self.min)
+        mask = self.Normal(maskMap, 255, 0)
         assert canvas.shape == mask.shape, 'occlussionMap and maskMap have different shape'
         filledMap = 1 - mask
         return canvas, filledMap
@@ -271,8 +288,11 @@ class OcclusionEstimateImage(object):
         return integ_graph
    
     @staticmethod
-    def covertRGB(image):
-        exampleMap = image / 255.0 #normalize
+    def Normal(image, minV, maxV):
+        if maxV != minV:
+            exampleMap = (image - minV) / (maxV - minV) #normalize
+        else:
+            exampleMap = np.ones(image.shape, dtype=image.type) 
         #make sure it is 3channel RGB
         #if (np.shape(exampleMap)[-1] > 3): 
         #    exampleMap = exampleMap[:,:,:3] #remove Alpha Channel
@@ -303,6 +323,13 @@ class OcclusionEstimateImage(object):
     
         return paddedMap[row_start:row_end, col_start:col_end]
 
+def del_file(path):
+    for i in os.listdir(path):
+        path_file = os.path.join(path,i)
+        if os.path.isfile(path_file):
+           os.remove(path_file)
+        else:
+            del_file(path_file)
 
 def main():
     occluImage = cv2.imread('D:/LaserData/plane/occlusion.png', cv2.IMREAD_GRAYSCALE)
