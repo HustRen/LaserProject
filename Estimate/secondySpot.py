@@ -1,14 +1,15 @@
 # coding:utf-8
-#霍夫圆检测
 import os
 import sys
 
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 
 sys.path.insert(0, 'D:/工作/研究生/激光干扰/LaserInterEval')
 sys.path.append(os.path.dirname(__file__) + os.sep + '../Estimate')
-from estimate import OcclusionEstimateImage
+from textureSynthesis import OcclusionEstimateImage
+from textureSynthesis import GridImage
 import WFSIM
 import WMSSIM
 
@@ -49,6 +50,37 @@ class SpotEstimate():
         mask = cv2.cvtColor(mask3, cv2.COLOR_RGB2GRAY)
         return mask
 
+class VarMeanEstimate(object):
+    def __init__(self, image, grid):
+        mask = SpotEstimate.getMask(image)
+        self.gridImage = GridImage(image, grid)
+        size = self.gridImage.meanImage.shape
+        scaleMask = cv2.resize(mask, (size[1], size[0]), interpolation=cv2.INTER_NEAREST)
+        menEst = OcclusionEstimateImage(self.gridImage.meanImage, scaleMask, 3)
+        self.meanImg = menEst.textureSynthesis()
+        varEst = OcclusionEstimateImage(self.gridImage.varImage, scaleMask, 3)
+        self.varImg = varEst.textureSynthesis()
+
+    def show(self):
+        plt.subplot(2,2,1)
+        plt.title('scrmean')
+        plt.imshow(self.gridImage.meanImage)
+
+        plt.subplot(2,2,2)
+        plt.title('scrVar')
+        plt.imshow(self.gridImage.varImage)
+
+        plt.subplot(2,2,3)
+        plt.title('estMean')
+        plt.imshow(self.meanImg)
+
+        plt.subplot(2,2,4)
+        plt.title('estVar')
+        plt.imshow(self.varImg)
+
+        plt.show()
+        plt.waitforbuttonpress()
+
 def estimateFeature(filePath):
     image = cv2.imread(filePath, cv2.IMREAD_GRAYSCALE)
 
@@ -59,8 +91,10 @@ if __name__ == "__main__":
     cv2.waitKey()
     cv2.destroyAllWindows()'''
     scrImage = cv2.imread('D:/LaserData/plane/path.png', cv2.IMREAD_GRAYSCALE)
+    maskImage = cv2.imread('D:/LaserData/plane/estimate/mask.png', cv2.IMREAD_GRAYSCALE)
     disImage = cv2.imread('D:/LaserData/plane/estimate/occlusion.png', cv2.IMREAD_GRAYSCALE)
     estImage = cv2.imread('D:/LaserData/plane/estimate/secondySpot/5789.png', cv2.IMREAD_GRAYSCALE)
+    print('-------------------------scrimage-----------------------------')
     print('scrImage SNR: %f', (WFSIM.SNR(scrImage)))
     print('disImage SNR: %f', (WFSIM.SNR(disImage)))
     print('estImage SNR: %f', (WFSIM.SNR(estImage)))
@@ -72,3 +106,43 @@ if __name__ == "__main__":
     print('estImage and disImage WMS_SSIM: %f', (WMSSIM.WMS_SSIM(estImage, disImage)))
     print('scrImage and disImage SSIM: %f', (WMSSIM.SSIM(scrImage, disImage)))
     print('estImage and disImage SSIM: %f', (WMSSIM.SSIM(estImage, disImage)))
+    print('-------------------------gridimage mean----------------------------')
+    gridScr = GridImage(scrImage, 3)
+    gridDist = GridImage(disImage, 3)
+    vm = VarMeanEstimate(disImage, 3)
+    print('Scr mean SNR: %f', (WFSIM.SNR(gridScr.meanImage)))
+    print('dist mean SNR: %f', (WFSIM.SNR(gridDist.meanImage)))
+    print('gird mean SNR: %f', (WFSIM.SNR(vm.meanImg)))
+    print('gird scrImage and disImage SSIM: %f', (WMSSIM.SSIM(gridScr.meanImage, gridDist.meanImage)))
+    print('gird estImage and disImage SSIM: %f', (WMSSIM.SSIM(vm.meanImg, gridDist.meanImage)))
+    print('gird scrImage and disImage lumComp: %f, conComp: %f', (WFSIM.lumComp(gridScr.meanImage, gridDist.meanImage), WFSIM.conComp(gridScr.meanImage, gridDist.meanImage)))
+    print('gird estImage and disImage lumComp: %f, conComp: %f', (WFSIM.lumComp(vm.meanImg, gridDist.meanImage), WFSIM.conComp(vm.meanImg, gridDist.meanImage)))
+    print('-------------------------gridimage var-----------------------------')
+    print('gridScr SNR: %f', (WFSIM.SNR(gridScr.varImage)))
+    print('gridDist SNR: %f', (WFSIM.SNR(gridDist.varImage)))
+    print('gird SNR: %f', (WFSIM.SNR(vm.varImg)))
+    print('gird scrImage and disImage SSIM: %f', (WMSSIM.SSIM(gridScr.varImage, gridDist.varImage)))
+    print('gird estImage and disImage SSIM: %f', (WMSSIM.SSIM(vm.varImg, gridDist.varImage)))
+
+    '''gridScr = GridImage(scrImage, 10)
+    mask = SpotEstimate.getMask(cv2.imread('D:/LaserData/plane/estimate/occlusion.png', cv2.IMREAD_GRAYSCALE))
+    gridMask = GridImage(mask, 10)
+    gridOcc = GridImage(cv2.imread('D:/LaserData/plane/estimate/occlusion.png', cv2.IMREAD_GRAYSCALE), 10)
+    occEst = OcclusionEstimateImage(gridOcc.meanImage, gridMask.meanImage, 3)
+    occEst.debugModel('D:/LaserData/plane/estimate/Grid')
+    gridEst = occEst.textureSynthesis()
+
+    plt.subplot(1,2,1)
+    plt.title('scr')
+    plt.imshow(gridScr)
+
+    plt.subplot(1,2,2)
+    plt.title('Est')
+    plt.imshow(gridEst)
+
+    plt.show()
+    plt.waitforbuttonpress()'''
+
+    #g = GridImage(maskImage, 10)
+    #g.show('mean')
+    #g.show('var')
