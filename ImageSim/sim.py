@@ -1,11 +1,18 @@
 # coding:utf-8
+import math
 import os
 import sys
-import math
+import random
+
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
-import matplotlib.pyplot as plt
+
+sys.path.append(os.path.dirname(__file__) + os.sep + '../ImageSim')
+sys.path.append('D:/工作/研究生/激光干扰/LaserInterEval')
+from LaserInterSim import file_name, mkdir, traversalDir_FirstDir
+
 
 def main():
     group = 'level9'

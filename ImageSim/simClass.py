@@ -1,11 +1,16 @@
 # coding:utf-8
+import abc
+import math
 import os
 import sys
-import math
+import random
+
 import cv2
 import numpy as np
-import abc
+
+sys.path.append('D:/工作/研究生/激光干扰/LaserInterEval')
 from sim import GetSatrtXYFromPolar
+from LaserInterSim import file_name, mkdir, traversalDir_FirstDir
 
 class SimAlgorSuper(metaclass = abc.ABCMeta):
     def __init__(self, im_size):
@@ -122,4 +127,23 @@ def main():
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    main()
+    base = 'D:/LaserData/background/1024X1024/sim/'
+    filelist = file_name('D:/LaserData/background/1024X1024/resize', '.png', True)
+    for file in filelist:
+        tname = os.path.basename(file) 
+        (shotname,extension) = os.path.splitext(tname)#文件名、后缀名
+        floder = base + shotname
+        mkdir(floder)
+        im = cv2.imread(file, cv2.IMREAD_GRAYSCALE)
+        row, col = im.shape
+        R = [10, 20, 30, 40, 50, 60]
+        for r in R:
+            for i in range(4):
+                simImg = SimImage(im.shape)
+                simImg.add(Background(im.shape, im))
+                r0 = random.randint(60, row - 60)
+                c0 = random.randint(60, col - 60)
+                simImg.add(LaserSpot(im.shape, (r0, c0), r))
+                name = str(r) + '_' + str(r0) + '_' + str(c0) + '.png'
+                cv2.imwrite(floder + '/' + name, simImg.image())
+                print(name)
