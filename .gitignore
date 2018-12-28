@@ -19,3 +19,4 @@ Estimate/estimate.py
 Estimate/__pycache__/textureSynthesis.cpython-36.pyc
 ImageSim/__pycache__/sim.cpython-36.pyc
 ImageSim/__pycache__/simClass.cpython-36.pyc
+Estimate/__pycache__/featureEstimate.cpython-36.pyc
