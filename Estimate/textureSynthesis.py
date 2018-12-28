@@ -117,7 +117,8 @@ class OcclusionEstimateImage(object):
                     if resolved_pixels%100 == 0 or resolved_pixels == pixels_to_resolve:
                         cv2.imwrite(self.__DEBUGPATH + str(resolved_pixels) + '.png', np.uint8(self.canvas*(self.max - self.min) + self.min))    
                     print('t:%d / %d, pos row:%d col:%d gay:%d scr: %d' %(resolved_pixels, pixels_to_resolve, candidate_row, candidate_col, 255*chosenPixel, scrgay))
-        print('finished')
+        if self.__DEBUG == True:
+            print('finished')
         return self.canvas*(self.max - self.min) + self.min
 
     def debugModel(self, path):

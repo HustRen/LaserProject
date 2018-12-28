@@ -28,7 +28,6 @@ def detect_circles_demo(image):
     cv2.waitKey()
     cv2.destroyAllWindows()
 
-
 class SpotEstimate():
     def __init__(self, scrImage):
         if scrImage.ndim == 3:
@@ -57,13 +56,13 @@ class SpotEstimate():
             rStr, rowStr, colStr=dtype.split('_')
             image = cv2.cvtColor(occlusionImage, cv2.COLOR_GRAY2RGB)
             mask3 = np.zeros(image.shape, dtype=np.uint8)
-            cv2.circle(mask3, (int(rStr), int(colStr)), rStr + 2, (255,255,255), thickness=cv2.FILLED)
+            cv2.circle(mask3, (int(rStr), int(colStr)), int(rStr) + 2, (255,255,255), thickness=cv2.FILLED)
             mask = cv2.cvtColor(mask3, cv2.COLOR_RGB2GRAY)
         return mask
 
 class VarMeanEstimate(object):
     def __init__(self, image, grid, dtype = 'circles'):
-        mask = SpotEstimate.getMask(image, 'circles')
+        mask = SpotEstimate.getMask(image, dtype)
         self.gridImage = GridImage(image, grid)
         size = self.gridImage.meanImage.shape
         scaleMask = cv2.resize(mask, (size[1], size[0]), interpolation=cv2.INTER_NEAREST)
@@ -92,15 +91,25 @@ class VarMeanEstimate(object):
         plt.show()
         plt.waitforbuttonpress()
 
-def estimateFeature(filePath):
-    image = cv2.imread(filePath, cv2.IMREAD_GRAYSCALE)
-
 def getfilename(fullpath):
     tname = os.path.basename(fullpath) 
     (shotname,extension) = os.path.splitext(tname)#文件名、后缀名
     return shotname
 
-if __name__ == "__main__":
+def getEstimateFeature(fullfilepath):
+    image = cv2.imread(fullfilepath, cv2.IMREAD_GRAYSCALE)
+    name = getfilename(fullfilepath)
+    girdEst = GridImage(image, 3)
+    vm = VarMeanEstimate(image, 3, name)
+    f1 = WFSIM.SNR(girdEst.meanImage)
+    f2 = WFSIM.SNR(vm.meanImg)
+    f3 = WMSSIM.SSIM(vm.meanImg, girdEst.meanImage)
+    f4 = WMSSIM.SSIM(vm.varImg, girdEst.varImage)
+    image[image < 255] = 0
+    f5 = np.sum(np.sum(image, axis=1),axis=0) / (image.shape[0] * image.shape[1] * 255)
+    return [f1, f2, f3, f4, f5]
+
+def main():
     '''scr = cv2.imread('D:/LaserData/background/1024X1024/sim/P0783__1__0___0/50_416_72.png', cv2.IMREAD_GRAYSCALE)
     scr[scr < 255] = 0
     scr = np.repeat(scr[:,:,np.newaxis], 3, axis=2)
@@ -126,7 +135,7 @@ if __name__ == "__main__":
     print('-------------------------gridimage mean----------------------------')
     gridScr = GridImage(scrImage, 3)
     gridDist = GridImage(disImage, 3)
-    vm = VarMeanEstimate(disImage, 3)
+    vm = VarMeanEstimate(disImage, 3, dtype='circles')
     print('Scr mean SNR: %f', (WFSIM.SNR(gridScr.meanImage)))
     print('dist mean SNR: %f', (WFSIM.SNR(gridDist.meanImage)))
     print('gird mean SNR: %f', (WFSIM.SNR(vm.meanImg)))
@@ -140,6 +149,9 @@ if __name__ == "__main__":
     print('gird SNR: %f', (WFSIM.SNR(vm.varImg)))
     print('gird scrImage and disImage SSIM: %f', (WMSSIM.SSIM(gridScr.varImage, gridDist.varImage)))
     print('gird estImage and disImage SSIM: %f', (WMSSIM.SSIM(vm.varImg, gridDist.varImage)))
+
+if __name__ == "__main__":
+    print(getEstimateFeature('D:/LaserData/background/1024X1024/sim/P0783__1__0___0/50_416_72.png'))
 
 
     #g = GridImage(maskImage, 10)
