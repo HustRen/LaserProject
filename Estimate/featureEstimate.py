@@ -97,6 +97,12 @@ def getfilename(fullpath):
     (shotname,extension) = os.path.splitext(tname)#文件名、后缀名
     return shotname
 
+def MFSIMforMatlab(im1Path, im2Path):
+    im1 = cv2.imread(im1Path, cv2.IMREAD_GRAYSCALE)
+    im2 = cv2.imread(im2Path, cv2.IMREAD_GRAYSCALE)
+    score = WFSIM.MFSIM(im1, im2)
+    return score * 100
+
 def getEstimateFeature(fullfilepath):
     image = cv2.imread(fullfilepath, cv2.IMREAD_GRAYSCALE)
     name = getfilename(fullfilepath)
