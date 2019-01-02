@@ -2,12 +2,13 @@
 import os
 import sys
 
+import re
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
 sys.path.insert(0, 'D:/工作/研究生/激光干扰/LaserInterEval')
-sys.path.append(os.path.dirname(__file__) + os.sep + '../Estimate')
+#sys.path.append(os.path.dirname(__file__) + os.sep + '../Estimate')
 from textureSynthesis import OcclusionEstimateImage
 from textureSynthesis import GridImage
 import WFSIM
@@ -100,11 +101,18 @@ def getEstimateFeature(fullfilepath):
     image = cv2.imread(fullfilepath, cv2.IMREAD_GRAYSCALE)
     name = getfilename(fullfilepath)
     girdEst = GridImage(image, 3)
-    vm = VarMeanEstimate(image, 3, name)
-    f1 = WFSIM.SNR(girdEst.meanImage)
-    f2 = WFSIM.SNR(vm.meanImg)
-    f3 = WMSSIM.SSIM(vm.meanImg, girdEst.meanImage)
-    f4 = WMSSIM.SSIM(vm.varImg, girdEst.varImage)
+    match = re.search(r'[0-9]{1,2}_[0-9]{1,3}_[0-9]{1,3}', name)
+    if match:
+        vm = VarMeanEstimate(image, 3, name)
+        f1 = WFSIM.SNR(girdEst.meanImage)
+        f2 = WFSIM.SNR(vm.meanImg)
+        f3 = WMSSIM.SSIM(vm.meanImg, girdEst.meanImage)
+        f4 = WMSSIM.SSIM(vm.varImg, girdEst.varImage)
+    else:
+        f1 = 0
+        f2 = 0
+        f3 = 0
+        f4 = 0
     image[image < 255] = 0
     f5 = np.sum(np.sum(image, axis=1),axis=0) / (image.shape[0] * image.shape[1] * 255)
     return [f1, f2, f3, f4, f5]
@@ -151,7 +159,9 @@ def main():
     print('gird estImage and disImage SSIM: %f', (WMSSIM.SSIM(vm.varImg, gridDist.varImage)))
 
 if __name__ == "__main__":
-    print(getEstimateFeature('D:/LaserData/background/1024X1024/sim/P0783__1__0___0/50_416_72.png'))
+    path0 = 'D:/LaserData/background/1024X1024/sim/P0783__1__0___0/50_416_72.png'
+    path1 = 'D:/LaserData/background/1024X1024/resize/P0022__1__0___0.png'
+    print(getEstimateFeature(path0))
 
 
     #g = GridImage(maskImage, 10)
